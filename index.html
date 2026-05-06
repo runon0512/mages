@@ -1191,7 +1191,7 @@
     </div>
     <script>
         // ここにデプロイしたGASのURLを貼り付けてください
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz6p7Jr3vXQorm9q3B3fTDpW2ZOLY02g_sJKt4kCYGhx52tYLv4Bx9S0Z4knrQRfBCO/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbx_bRapfyuaApGAoomtmJqgThiD9eXGa8o6RfkmlbiwOzgZOyTwbZub40dV3l_4Nmmo/exec";
         let isLoginMode = true;
         let currentUserData = null;
 
@@ -1230,26 +1230,56 @@
 
         // 属性に基づいて髪と瞳の色を生成する (GASと同期)
         function generateColorsByAttribute(attribute) {
+            const skin = generateSkinColor();
+            // レア判定（5%の確率で特殊個体）
+            if (Math.random() < 0.05) {
+                const specials = [
+                    { hair: "#FFD700", eyes: "#1E90FF", skin: skin, label: "金髪碧眼" },
+                    { hair: "#F5F5F5", eyes: "#FF4500", skin: skin, label: "銀髪赤眼" },
+                    { hair: "#2F4F4F", eyes: "#FFD700", skin: skin, label: "黒髪金眼" }
+                ];
+                return specials[Math.floor(Math.random() * specials.length)];
+            }
+
             const colorPalettes = {
                 "炎": {
-                    hair: ["#FF4500", "#FF8C00", "#FFA500", "#FFD700"], // Red, DarkOrange, Orange, Gold
-                    eyes: ["#FF8C00", "#FFA500", "#FFD700", "#FFFF00"]  // DarkOrange, Orange, Gold, Yellow
+                    hair: ["#FF4500", "#B22222", "#FF0000", "#8B0000", "#FF6347"],
+                    eyes: ["#FFD700", "#FF8C00", "#FF4500", "#FFFF00"]
                 },
                 "水": {
-                    hair: ["#1E90FF", "#00BFFF", "#87CEFA", "#B0C4DE"], // DodgerBlue, DeepSkyBlue, LightSkyBlue, LightSteelBlue
-                    eyes: ["#1E90FF", "#00CED1", "#40E0D0", "#00FFFF"]  // DodgerBlue, DarkCyan, Turquoise, Aqua
+                    hair: ["#00BFFF", "#1E90FF", "#000080", "#4682B4", "#87CEFA"],
+                    eyes: ["#00CED1", "#AFEEEE", "#E0FFFF", "#00FFFF"]
                 },
                 "地": {
-                    hair: ["#8B4513", "#A0522D", "#D2B48C", "#556B2F"], // SaddleBrown, Sienna, Tan, DarkOliveGreen
-                    eyes: ["#228B22", "#3CB371", "#8FBC8F", "#6B8E23"]  // ForestGreen, MediumSeaGreen, DarkSeaGreen, OliveDrab
+                    hair: ["#8B4513", "#556B2F", "#228B22", "#006400", "#A0522D"],
+                    eyes: ["#808000", "#6B8E23", "#CD853F", "#556B2F"]
                 }
             };
 
-            const selectedPalette = colorPalettes[attribute];
+            const palette = colorPalettes[attribute] || colorPalettes["炎"];
             return {
-                hair: selectedPalette.hair[Math.floor(Math.random() * selectedPalette.hair.length)],
-                eyes: selectedPalette.eyes[Math.floor(Math.random() * selectedPalette.eyes.length)]
+                hair: palette.hair[Math.floor(Math.random() * palette.hair.length)],
+                eyes: palette.eyes[Math.floor(Math.random() * palette.eyes.length)],
+                skin: skin
             };
+        }
+
+        function generateSkinColor() {
+            const h = 25 + Math.random() * 10;
+            const s = 25 + Math.random() * 20;
+            const l = 75 + Math.random() * 15;
+            return hslToHex(h, s, l);
+        }
+
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
         }
 
         // キャラクターのSVG画像を生成するヘルパー関数
@@ -1259,7 +1289,7 @@
             }
 
             // SVGファイルのパス。必要に応じて調整してください。
-            const svgBaseUrl = 'svg/';
+            const svgBaseUrl = 'https://raw.githubusercontent.com/runon0512/mages/b1e494f07756547e1c52964af217478760ba084d/svg/';
 
             // SVG要素を生成し、各パーツを重ねて表示
             // 髪と瞳の色は、SVGファイル内の特定の要素（例: id="hair", id="eyes"）にfill属性を適用することで変更できます。
@@ -1335,7 +1365,7 @@
                 baseStats: { hp: 120, str: 15, vit: 12, agi: 8 },
                 skills: [0, 5, 6], // 初期スキル
                 imageParts: { back: "Back1.svg", face: "Face1.svg", eyes: "Eyes3.svg", front: "Front6.svg" },
-                colors: { hair: "#FF4500", eyes: "#FF8C00" } // サンプルは固定
+                colors: { hair: "#FF4500", eyes: "#FF8C00", skin: "#FFE0BD" } // サンプルは固定
             },
             { 
                 name: "影の暗殺者", 
@@ -1345,7 +1375,7 @@
                 baseStats: { hp: 85, str: 10, vit: 6, agi: 20 },
                 skills: [0, 10, 11],
                 imageParts: { back: "Back2.svg", face: "Face1.svg", eyes: "Eyes1.svg", front: "Front2.svg" }, // サンプルは固定
-                colors: { hair: "#1E90FF", eyes: "#1E90FF" } 
+                colors: { hair: "#1E90FF", eyes: "#1E90FF", skin: "#F1C27D" } 
             },
             { 
                 name: "大地の守護者", 
@@ -1355,7 +1385,7 @@
                 baseStats: { hp: 150, str: 12, vit: 20, agi: 5 },
                 skills: [0, 15, 17],
                 imageParts: { back: "Back3.svg", face: "Face1.svg", eyes: "Eyes2.svg", front: "Front4.svg" }, // サンプルは固定
-                colors: { hair: "#8B4513", eyes: "#228B22" } 
+                colors: { hair: "#8B4513", eyes: "#228B22", skin: "#E0AC69" } 
             }
         ];
 
@@ -1618,17 +1648,15 @@
             const canClick = !isEnemy && !isActive && unit.hp > 0 && (battleData.isSwitching || battleData.waitingForSwitch);
             const attrClass = `attr-${unit.data.attribute}`;
             const clickAttr = canClick ? `onclick="handleUnitClick(${originalIdx})"` : '';
-            // const imgUrl = unit.data.image || 'https://via.placeholder.com/160x200/222/444?text=CHARACTER'; // 古い画像URLは使用しない
             const hasBuff = unit.effects.length > 0;
             
             return `
                 <div class="battle-unit ${status} ${attrClass}" ${clickAttr} id="${isEnemy ? 'enemy' : 'player'}-unit-${originalIdx}">
                     ${hasBuff ? '<div class="buff-aura"></div>' : ''}
-                    <img src="${imgUrl}" class="unit-card-img">
-                    <div class="unit-card-info">
                     <div class="char-img-container unit-card-img">
                         ${createCharacterSvg(unit.data.imageParts, unit.data.colors)}
                     </div>
+                    <div class="unit-card-info">
                         <div style="font-weight:bold; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${unit.data.name}</div>
                         <div class="hp-bar-container">
                             <div class="hp-bar-fill" style="width:${hpPer}%; background: ${isEnemy ? '#ff4d4d' : '#2ecc71'};"></div>
