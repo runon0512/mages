@@ -32,10 +32,11 @@
         /* 16:9固定コンテナ */
         .game-container {
             position: relative;
-            width: 100%;
-            height: 100vh;
+            width: 100vw;
+            height: 56.25vw;
+            max-width: 177.78vh;
             max-height: 100vh;
-            max-width: 177.78vh; /* 16:9 ratio */
+            margin: auto;
             background-color: var(--bg-color);
             background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
             color: var(--text-color);
@@ -328,6 +329,14 @@
             outline: none;
             font-family: inherit;
         }
+        .auth-form label {
+            font-size: 1.6vh;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
 
         .auth-form button {
             background: var(--accent-color);
@@ -358,6 +367,11 @@
             padding: 2%;
             box-sizing: border-box;
             overflow-y: auto;
+        }
+        /* バトル画面はパディングなしで全画面表示 */
+        #battle-screen.screen-overlay {
+            padding: 0;
+            overflow: hidden;
         }
 
         .screen-content {
@@ -618,19 +632,21 @@
             justify-content: space-between;
             padding: 20px;
             position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .battle-side {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 5%;
+            gap: 2%;
             height: 40%;
         }
 
         .battle-unit { 
-            width: 20%; 
-            height: 90%;
+            height: 100%;
+            aspect-ratio: 63 / 110; /* 画像88 + 情報エリア */
             text-align: center; 
             padding: 0; 
             border: 1px solid rgba(255,255,255,0.1); 
@@ -733,20 +749,22 @@
 
         .battle-actions-container {
             position: absolute;
-            bottom: 5%;
-            left: 2%;
+            bottom: 2%;
+            left: 1%;
             background: rgba(0, 0, 0, 0.85);
-            padding: 2vh;
+            padding: 1.5vh;
             display: flex;
             flex-direction: column;
-            gap: 2vh;
+            gap: 1vh;
             border: 2px solid var(--accent-color);
             box-shadow: 0 0 20px rgba(80, 150, 255, 0.3);
             z-index: 1200;
-            width: 25%;
+            width: 22%;
+            max-height: 45%;
+            overflow-y: auto;
         }
         .action-group { display: flex; flex-direction: column; gap: 1vh; }
-        .action-btn { padding: 1.5vh; font-size: 2.2vh; line-height: 1.2; }
+        .action-btn { padding: 1vh; font-size: 1.8vh; line-height: 1.1; }
 
         /* スキル説明ポップアップ */
         #skill-tooltip {
@@ -838,38 +856,47 @@
         /* チャットUI */
         #chat-container {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid var(--accent-color);
+            bottom: 18%; /* ナビゲーションバー(18%)のすぐ上に配置 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35%;
+            min-width: 320px;
+            max-width: 500px;
+            background: rgba(10, 10, 10, 0.7);
+            border: 1px solid rgba(80, 150, 255, 0.2);
+            border-top: 2px solid var(--accent-color);
             z-index: 3000;
-            display: flex;
+            display: none;
             flex-direction: column;
-            backdrop-filter: blur(10px);
-            transition: 0.3s;
+            backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+            border-radius: 12px 12px 0 0;
         }
         #chat-header {
-            background: var(--accent-color);
-            color: #000;
-            padding: 5px 10px;
-            font-size: 0.8rem;
+            background: linear-gradient(90deg, rgba(80, 150, 255, 0.15), transparent);
+            color: var(--accent-color);
+            padding: 10px 15px;
+            font-size: 0.75rem;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(80, 150, 255, 0.1);
         }
         #chat-mini-view {
-            padding: 8px;
+            padding: 10px 15px;
             font-size: 0.7rem;
-            color: #ccc;
-            max-height: 80px;
+            color: #aaa;
+            max-height: 60px;
             overflow: hidden;
             cursor: pointer;
+            font-style: italic;
         }
         #chat-full-view {
             display: none;
-            height: 350px;
+            height: 30vh;
             flex-direction: column;
         }
         #chat-messages {
@@ -877,29 +904,50 @@
             overflow-y: auto;
             padding: 10px;
             font-size: 0.75rem;
-            border-bottom: 1px solid #333;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) transparent;
         }
+        #chat-messages::-webkit-scrollbar { width: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 2px; }
+
         .chat-msg { margin-bottom: 5px; line-height: 1.3; }
         .chat-msg-user { color: var(--accent-color); font-weight: bold; }
         .chat-msg-text { color: #eee; margin-left: 5px; }
         #chat-input-area {
             display: flex;
-            padding: 5px;
+            padding: 10px;
+            gap: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
         #chat-input {
             flex: 1;
-            background: #111;
-            border: 1px solid #444;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(80, 150, 255, 0.2);
             color: #fff;
-            padding: 5px;
+            padding: 8px 12px;
             font-size: 0.75rem;
+            border-radius: 4px;
+            outline: none;
+            transition: 0.3s;
+        }
+        #chat-input:focus {
+            border-color: var(--accent-color);
+            background: rgba(80, 150, 255, 0.1);
         }
         #chat-send-btn {
             background: var(--accent-color);
+            color: #000;
             border: none;
-            padding: 5px 10px;
+            padding: 0 20px;
             cursor: pointer;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+        #chat-send-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 10px var(--accent-color);
         }
 
         /* ショップ画面用 */
@@ -1029,6 +1077,39 @@
             80% { opacity: 1; transform: scale(1.1); }
             100% { opacity: 0; transform: translateX(100%) skewX(20deg); filter: blur(10px) brightness(3); }
         }
+        /* フレンド関連 */
+        #friend-btn-float {
+            position: absolute;
+            bottom: 3vh;
+            right: 3vh;
+            z-index: 4000;
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 7vh;
+            height: 7vh;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2vh;
+            box-shadow: 0 0 15px var(--accent-color);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -5px; right: -5px;
+            background: #ff4d4d;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.6rem;
+        }
+        .online-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+        .status-on { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .status-off { background: #888; }
     </style>
 </head>
 <body>
@@ -1039,6 +1120,9 @@
             <h2 id="auth-title">ログイン</h2>
             <input type="text" id="username" placeholder="ユーザー名">
             <input type="password" id="password" placeholder="パスワード">
+            <label>
+                <input type="checkbox" id="remember-me"> ID、パスワードを記憶する
+            </label>
             <button id="auth-btn" onclick="handleAuth()">実行</button>
             <div class="switch-auth" id="auth-toggle" onclick="toggleAuthMode()">新規登録はこちら</div>
         </div>
@@ -1183,6 +1267,63 @@
         </div>
     </div>
 
+    <!-- 世界（ストーリー選択）画面 -->
+    <div id="world-screen" class="screen-overlay">
+        <div class="screen-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-color); margin: 0; letter-spacing: 0.2em;">世界探索</h2>
+                <button class="nav-button" style="padding: 5px 20px;" onclick="closeWorldMenu()">閉じる</button>
+            </div>
+            <div style="display: flex; gap: 4vh; height: 70vh;">
+                <div style="flex: 2; overflow-y: auto;">
+                    <h3 style="color: var(--gold-color); font-size: 1.2rem; border-bottom: 1px solid #444; padding-bottom: 1vh;">ステージ選択</h3>
+                    <div id="story-stage-list"></div>
+                </div>
+                <div style="flex: 1; background: rgba(0,0,0,0.3); padding: 2vh; border: 1px solid #333;">
+                    <h3 style="color: var(--accent-color); font-size: 1rem; border-bottom: 1px solid #444; padding-bottom: 1vh;">ストーリーランキング (TOP10)</h3>
+                    <div id="story-ranking-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フレンド画面 -->
+    <div id="friend-screen" class="screen-overlay">
+        <div class="screen-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-color); margin: 0; letter-spacing: 0.2em;">フレンド</h2>
+                <button class="nav-button" style="padding: 5px 20px;" onclick="closeFriendMenu()">閉じる</button>
+            </div>
+            <div style="display: flex; gap: 4vh; height: 70vh;">
+                <div style="flex: 2; overflow-y: auto;">
+                    <h3 style="color: var(--gold-color); font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 1vh;">フレンド一覧</h3>
+                    <div id="friend-main-list"></div>
+                </div>
+                <div style="flex: 1.5; background: rgba(0,0,0,0.3); padding: 2vh; border: 1px solid #333; display: flex; flex-direction: column; gap: 2vh;">
+                    <div>
+                        <h3 style="color: var(--accent-color); font-size: 0.9rem; border-bottom: 1px solid #444; padding-bottom: 1vh;">フレンド検索</h3>
+                        <div style="display: flex; gap: 5px; margin-top: 1vh;">
+                            <input type="text" id="friend-search-input" placeholder="ユーザー名を入力..." style="flex: 1; background: #222; border: 1px solid #444; color: #fff; padding: 5px; font-size: 0.8rem;">
+                            <button class="nav-button" style="padding: 5px 10px; font-size: 0.7rem;" onclick="searchFriend()">検索</button>
+                        </div>
+                        <div id="friend-search-results" style="margin-top: 1vh; max-height: 20vh; overflow-y: auto;"></div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-color); font-size: 0.9rem; border-bottom: 1px solid #444; padding-bottom: 1vh;">届いているリクエスト</h3>
+                        <div id="friend-request-list" style="margin-top: 1vh; max-height: 25vh; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フレンドボタン -->
+    <button id="friend-btn-float" onclick="openFriendMenu()">
+        👤
+        <span id="friend-notif" class="notif-badge" style="display: none;">0</span>
+        <span style="font-size: 0.6rem; margin-top: 2px;">FRIEND</span>
+    </button>
+
 
     <nav>
         <button class="nav-button" onclick="openFormation()">編成</button>
@@ -1192,23 +1333,38 @@
     </div>
     <script>
         // ここにデプロイしたGASのURLを貼り付けてください
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwQwlHiCP94eWEpN2aMdFcaBbuAUckXamQf0SfpAlxkoJ8JXhicL4Ma5i4ilizfRUO-/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxOVWN-estf2_4YslFSNNur4uMrvNV7KUq5d6ZoMfVFPFINssKFq43jV0B_bOesoU0/exec";
+
+        // スキル詳細ポップアップの初期化
+        const infoPopup = document.createElement('div');
+        infoPopup.id = 'skill-info-popup';
+        document.body.appendChild(infoPopup);
+
+        // 画面クリック時にスキルポップアップを閉じる
+        document.addEventListener('click', hideSkillInfo);
+
+        let friendUpdateInterval = null;
         let isLoginMode = true;
         let currentUserData = null;
 
         // ページ読み込み時にセッション確認
         window.onload = () => {
-            const savedSession = localStorage.getItem('gs2_session');
-            if (savedSession) {
-                applyUserData(JSON.parse(savedSession));
+            const savedUser = localStorage.getItem('gs2_saved_username');
+            if (savedUser) {
+                document.getElementById('username').value = savedUser;
+                document.getElementById('remember-me').checked = true;
             }
             createParticles();
-            setInterval(fetchChatMessages, 15000);
             setInterval(fetchShopCharacters, 60 * 60 * 1000); // 1時間ごとにショップをチェック
-            fetchChatMessages();
         };
 
+        // 明るさ計算のヘルパー（欠落していたため追加）
+        function getBrightness() {
+            return 0.8 + Math.random() * 0.4;
+        }
+
         // 現在の編成位置 [Starter, Slot2, Slot3] (indexを格納)
+        let chatInterval = null;
         let currentFormation = [null, null, null];
 
         // パーティクルの生成
@@ -1226,7 +1382,18 @@
                 p.style.animationDelay = Math.random() * 5 + 's';
                 container.appendChild(p);
             }
-        };
+        }
+
+        // ゴールドの単位を万Gに変換する
+        function formatGold(n) {
+            return Number(n).toLocaleString() + '万G';
+        }
+
+        // チャットの表示・非表示を切り替えるヘルパー
+        function toggleChatVisibility(isVisible) {
+            const chat = document.getElementById('chat-container');
+            if (chat) chat.style.display = isVisible ? 'flex' : 'none';
+        }
 
         // 属性に基づいて髪と瞳の色を生成する (GASと同期)
         function generateColorsByAttribute(attribute) {
@@ -1552,6 +1719,7 @@
                 params.append('gold', currentUserData.gold);
                 params.append('characterData', JSON.stringify(sampleCharacters));
                 params.append('formationData', JSON.stringify(currentFormation));
+                params.append('storyProgress', currentUserData.storyProgress || 0);
 
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
@@ -1565,7 +1733,6 @@
                     // ローカルのセッション情報も更新
                     currentUserData.characterData = JSON.stringify(sampleCharacters);
                     currentUserData.formationData = JSON.stringify(currentFormation);
-                    localStorage.setItem('gs2_session', JSON.stringify(currentUserData));
                 } else {
                     if (!silent) alert("セーブ失敗: " + res.message);
                 }
@@ -1607,7 +1774,7 @@
             { name: "スモーク", attr: "地", power: 35, scale: "str", desc: "目くらまし。攻撃力を10%上げる。", buff: { type: "str", value: 10, icon: "⚔️↑" } },
         ];
 
-        async function startBattle() {
+        async function startBattle(fixedEnemy = null, isStory = false) {
             if (!currentUserData) return alert("ログインが必要です");
             
             // プレイヤーパーティ構築
@@ -1631,24 +1798,25 @@
             if (party.length === 0) return alert("編成にキャラクターがいません");
 
             let enemyParty;
-            if (fixedEnemy) {
-                enemyParty = [JSON.parse(JSON.stringify(fixedEnemy))].map(char => {
+            if (fixedEnemy && Array.isArray(fixedEnemy)) {
+                enemyParty = fixedEnemy.map(char => {
+                    const parsedChar = JSON.parse(JSON.stringify(char));
                     return {
-                        data: char,
-                        hp: calculateStat(char.baseStats.hp),
-                        maxHp: calculateStat(char.baseStats.hp),
-                        stats: { str: calculateStat(char.baseStats.str), vit: calculateStat(char.baseStats.vit), agi: calculateStat(char.baseStats.agi) },
+                        data: parsedChar,
+                        hp: calculateStat(parsedChar.baseStats.hp),
+                        maxHp: calculateStat(parsedChar.baseStats.hp),
+                        stats: { str: calculateStat(parsedChar.baseStats.str), vit: calculateStat(parsedChar.baseStats.vit), agi: calculateStat(parsedChar.baseStats.agi) },
                         effects: [],
-                        skills: (char.skills || [0]).map(idx => SKILL_LIST[idx])
+                        skills: (parsedChar.skills || [0]).map(idx => SKILL_LIST[idx])
                     };
                 });
             } else {
-                const enemyTemplates = [
+                let enemyTemplates = [
                 { name: "覆面の騎士", attribute: "地", baseStats: { hp: 130, str: 16, vit: 14, agi: 8 }, image: null, skills: [1, 15, 17, 18] },
                 { name: "覆面の魔導士", attribute: "炎", baseStats: { hp: 90, str: 20, vit: 6, agi: 15 }, image: null, skills: [5, 6, 8, 9] }
             ];
 
-            const enemyParty = Array.from({length: 3}).map(() => {
+                enemyParty = Array.from({length: 3}).map(() => {
                 const base = enemyTemplates[Math.floor(Math.random() * enemyTemplates.length)];
                 const char = JSON.parse(JSON.stringify(base));
                 return {
@@ -1679,6 +1847,7 @@
             };
 
             document.getElementById('battle-screen').style.display = 'flex';
+            toggleChatVisibility(false);
             document.getElementById('battle-close-btn').style.display = 'none';
             document.getElementById('battle-actions-area').style.display = 'flex';
             updateBattleUI();
@@ -2235,14 +2404,16 @@
             
             if (win) {
                 await playBattleWin();
-                currentUserData.gold += 50;
                 
                 if (battleData.isStory) {
                     currentUserData.storyProgress = (currentUserData.storyProgress || 0) + 1;
-                    addBattleLog("ストーリーが進行しました！");
+                    currentUserData.gold += 100; // ステージクリア報酬: 100万G
+                    addBattleLog("ストーリーが進行しました！報酬: 100万G獲得");
+                } else {
+                    currentUserData.gold += 50;
                 }
 
-                document.getElementById('display-gold').innerText = Number(currentUserData.gold).toLocaleString();
+                document.getElementById('display-gold').innerText = formatGold(currentUserData.gold);
                 
                 // オートセーブ
                 saveGameData(true);
@@ -2256,49 +2427,7 @@
 
         function closeBattle() {
             document.getElementById('battle-screen').style.display = 'none';
-            document.getElementById('battle-log').innerHTML = '';
-            // 演出リセット
-            const overlay = document.getElementById('battle-intro-overlay');
-            overlay.style.display = 'none';
-            const text = document.getElementById('battle-intro-text');
-            text.style.animation = '';
-            text.style.color = '';
-            text.style.textShadow = '';
-        }
-
-        // ストーリーデータ定義
-        const STORY_STAGES = [
-            {
-                title: "第一章：旅立ちの草原",
-                description: "修行を終えた騎士の前に、ならず者たちが現れた。",
-                enemy: { name: "草原のならず者", attribute: "地", baseStats: { hp: 120, str: 8, vit: 8, agi: 5 }, skills: [0, 15] }
-            },
-            {
-                title: "第二章：炎の洞窟",
-                description: "洞窟の奥から熱気が伝わってくる。守護者が道を塞いでいる。",
-                enemy: { name: "洞窟の守護者", attribute: "炎", baseStats: { hp: 180, str: 12, vit: 10, agi: 10 }, skills: [5, 6, 7] }
-            },
-            {
-                title: "第三章：静かなる湖畔",
-                description: "美しく輝く湖。しかしその水面下には凶暴な魔物が潜んでいた。",
-                enemy: { name: "湖底の魔物", attribute: "水", baseStats: { hp: 220, str: 14, vit: 15, agi: 12 }, skills: [10, 11, 12] }
-            }
-        ];
-
-        function openWorldMenu() {
-            const progress = currentUserData.storyProgress || 0;
-            const stage = STORY_STAGES[progress] || STORY_STAGES[STORY_STAGES.length - 1];
-            const isComplete = progress >= STORY_STAGES.length;
-
-            if (isComplete) {
-                alert("現在公開されているストーリーはすべてクリアしました！今後のアップデートをお待ちください。");
-                startBattle(); // クリア後はランダムバトル
-                return;
-            }
-
-            if (confirm(`${stage.title}\n\n${stage.description}\n\n挑戦しますか？`)) {
-                startBattle(stage.enemy, true);
-            }
+            toggleChatVisibility(true);
         }
 
         // ドラッグ＆ドロップ用ハンドラ
@@ -2415,6 +2544,7 @@
                 list.appendChild(div);
             });
             document.getElementById('formation-screen').style.display = 'flex';
+            toggleChatVisibility(false);
         }
 
         function showCharDetails(index) {
@@ -2458,9 +2588,10 @@
             const skillHtml = equippedIndices.map(sIdx => {
                 const s = SKILL_LIST[sIdx];
                 return `
-                    <div class="skill-display-item">
-                        <div style="font-weight: bold; color: #fff;">${s.name} <span style="font-size:0.7em; color:var(--accent-color);">[威力:${s.power}]</span></div>
-                        <div style="font-size:0.8em; color:#aaa; margin-top:0.5vh;">${s.desc}</div>
+                    <div class="skill-badge skill-attr-${s.attr}"
+                         onclick="showSkillInfo(event, ${sIdx})"
+                         style="margin-bottom:8px; display:block; text-align:center;">
+                        ${s.name}
                     </div>
                 `;
             }).join('');
@@ -2474,9 +2605,9 @@
                             <span style="font-size: 0.8rem; color: var(--gold-color); margin-left: 8px;">OVR ${ovr}</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 3%; margin-top: 2vh; height: 60vh;">
-                        <div style="flex: 1;">
-                             <div class="char-img-container" style="height: 100%; border: 1px solid #444;">
+                    <div style="display: flex; gap: 3%; margin-top: 2vh; align-items: flex-start;">
+                        <div style="width: 35%;">
+                             <div class="char-img-container" style="border: 1px solid #444; width: 100%;">
                                 ${createCharacterSvg(char.imageParts, char.colors)}
                              </div>
                         </div>
@@ -2501,7 +2632,7 @@
                                 </div>
                             </div>
                         <div style="margin-top: 3vh; border-top: 1px solid #333; padding-top: 2vh; display: ${char.name === '無名の騎士' ? 'none' : 'block'};">
-                                <button class="nav-button" style="width: 100%; border-color: #e74c3c; color: #e74c3c;" onclick="sellCharacter(${index})">ショップに売却</button>
+                                <button id="sell-action-btn" class="nav-button" style="width: 100%; border-color: #e74c3c; color: #e74c3c;" onclick="sellCharacter(${index})">ショップに売却</button>
                             </div>
                             ` : ''}
                         </div>
@@ -2514,34 +2645,47 @@
             const char = sampleCharacters[index];
             if (!confirm(`【${char.name}】を売却しますか？`)) return;
 
+            const btn = document.getElementById('sell-action-btn');
+            const originalText = btn.innerText;
+
             try {
+                btn.disabled = true;
+                btn.innerText = "通信中...";
+
                 const params = new URLSearchParams();
                 params.append('action', 'sellCharacter');
                 params.append('userId', currentUserData.id);
+                params.append('username', currentUserData.username);
                 params.append('charIndex', index);
 
                 const response = await fetch(GAS_URL, { method: 'POST', body: params });
                 const res = await response.json();
 
                 if (res.success) {
-                    alert(`${res.sellPrice}G で売却しました。`);
+                    alert(`${formatGold(res.sellPrice)} で売却しました。`);
                     currentUserData.gold = res.newGold;
+                    currentUserData.characterData = JSON.stringify(res.newCharacters);
+                    currentUserData.formationData = JSON.stringify(res.newFormation);
                     sampleCharacters = res.newCharacters;
                     currentFormation = res.newFormation;
-                    localStorage.setItem('gs2_session', JSON.stringify(currentUserData));
                     applyUserData(currentUserData);
                     openFormation();
+                    saveGameData(true);
                 } else {
                     alert("売却失敗: " + res.message);
                 }
             } catch (e) {
                 console.error(e);
                 alert("売却処理中にエラーが発生しました。");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
         }
 
         function closeFormation() {
             document.getElementById('formation-screen').style.display = 'none';
+            toggleChatVisibility(true);
         }
 
         function toggleAuthMode() {
@@ -2557,8 +2701,21 @@
             document.getElementById('display-userid').innerText = 'ID: ' + userData.id;
             // ゴールドを数値として保持
             currentUserData.gold = Number(userData.gold);
-            document.getElementById('display-gold').innerText = currentUserData.gold.toLocaleString();
+            document.getElementById('display-gold').innerText = formatGold(currentUserData.gold);
             
+            document.getElementById('friend-btn-float').style.display = 'flex';
+            if (!friendUpdateInterval) {
+                friendUpdateInterval = setInterval(updateFriendsData, 30000);
+                updateFriendsData();
+            }
+
+            // ログイン成功時にチャットを表示し、取得を開始する
+            if (!chatInterval) {
+                chatInterval = setInterval(fetchChatMessages, 15000);
+                fetchChatMessages();
+            }
+            toggleChatVisibility(true);
+
             // サーバーからキャラデータがあれば復元
             try {
                 if (userData.characterData) {
@@ -2607,7 +2764,13 @@
                 const res = await response.json();
 
                 if (res.success) {
-                    localStorage.setItem('gs2_session', JSON.stringify(res.userData)); // サーバーからの初期データを保存
+                    const remember = document.getElementById('remember-me').checked;
+                    if (remember) {
+                        localStorage.setItem('gs2_saved_username', username);
+                    } else {
+                        localStorage.removeItem('gs2_saved_username');
+                    }
+
                     applyUserData(res.userData); // UIに反映 (新規登録時はcharacterDataが空になる)
 
                     if (!isLoginMode) { // 新規登録の場合のみ実行
@@ -2741,6 +2904,7 @@
 
         async function openShop() {
             document.getElementById('shop-screen').style.display = 'flex';
+            toggleChatVisibility(false);
             // 管理者ボタンの表示制御
             const adminBtn = document.getElementById('shop-admin-refresh-btn');
             if (currentUserData && currentUserData.id === "GS2-242259") {
@@ -2751,6 +2915,7 @@
 
         function closeShop() {
             document.getElementById('shop-screen').style.display = 'none';
+            toggleChatVisibility(true);
             if (shopUpdateInterval) {
                 clearInterval(shopUpdateInterval);
                 shopUpdateInterval = null;
@@ -2822,6 +2987,41 @@
             renderShop(sorted);
         }
 
+        function showSkillInfo(event, idx) {
+            if (event) event.stopPropagation();
+            const s = SKILL_LIST[idx];
+            const popup = document.getElementById('skill-info-popup');
+            if (!popup) return;
+
+            const scaleName = s.scale === 'str' ? '攻撃力' : s.scale === 'vit' ? '防御力' : s.scale === 'agi' ? '素早さ' : '総合力';
+
+            popup.innerHTML = `
+                <div style="color:var(--accent-color); font-weight:bold; border-bottom:1px solid #333; margin-bottom:8px; padding-bottom:5px; font-size:1rem;">${s.name}</div>
+                <div style="font-size:0.8rem; color:#ddd; margin-bottom:4px;">
+                    <span style="color:${s.attr==='炎'?'#f55':s.attr==='水'?'#58f':s.attr==='地'?'#2e7':'#aaa'};">●</span> ${s.attr}属性
+                    <span style="margin-left:10px;">威力: <span style="color:var(--gold-color); font-weight:bold;">${s.power}</span></span>
+                </div>
+                <div style="font-size:0.75rem; color:#888; margin-bottom:10px;">依存能力: ${scaleName}</div>
+                <div style="font-size:0.85rem; line-height:1.5; color:#eee; background:rgba(255,255,255,0.05); padding:8px; border-radius:4px;">${s.desc}</div>
+                <div style="font-size:0.6rem; color:#555; margin-top:10px; text-align:right;">(画面クリックで閉じる)</div>
+            `;
+            popup.style.display = 'block';
+
+            let x = event.clientX + 15;
+            let y = event.clientY + 15;
+            // 画面外はみ出し防止
+            if (x + 250 > window.innerWidth) x = event.clientX - 265;
+            if (y + 180 > window.innerHeight) y = event.clientY - 195;
+
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+        }
+
+        function hideSkillInfo() {
+            const popup = document.getElementById('skill-info-popup');
+            if (popup) popup.style.display = 'none';
+        }
+
         // 能力評価から重みを計算
         function getTierWeight(t) {
             const weights = { "X": 10, "SS": 9, "S": 8, "AA": 7, "A+": 6, "A": 5, "B+": 4, "B": 3, "C+": 2, "C": 1, "D": 0 };
@@ -2857,7 +3057,7 @@
                 if (!priceEl || !detailEl) return;
 
                 const state = calculateCurrentState(char);
-                priceEl.innerText = `${state.currentPrice.toLocaleString()} G`;
+                priceEl.innerText = formatGold(state.currentPrice);
                 detailEl.innerText = `Day ${state.totalDays.toFixed(5)} (${((state.currentPrice / state.basePrice) * 100).toFixed(2)}%)`;
             });
         }
@@ -2889,8 +3089,15 @@
                         <div style="font-weight: bold; font-size: 1.1rem; color: #fff;">${char.name}</div>
                         <div style="font-size: 0.8rem; color: var(--accent-color);">属性: ${char.attribute}</div>
                         <div style="font-size: 0.7rem; color: #888; margin-top: 2px;">
-                            出品者: ${currentUserData && char.seller === currentUserData.id ? 'あなた' : 'M.A.G.E.S本部'}
-                            <!-- 将来的に、M.A.G.E.S本部以外のプレイヤー出品の場合はそのプレイヤー名を出すことも検討できます -->
+                            出品者: ${currentUserData && char.seller === currentUserData.username ? 'あなた' : (char.seller || 'M.A.G.E.S本部')}
+                        </div>
+                        <div style="margin-top: 5px;">
+                            <span style="font-size:0.6rem; color:#666; display:block; margin-bottom:2px;">SKILLS:</span>
+                            ${(char.skills || []).map(sIdx => {
+                                const s = SKILL_LIST[sIdx];
+                                return `<span class="skill-badge skill-attr-${s.attr}"
+                                              onclick="showSkillInfo(event, ${sIdx})">${s.name}</span>`;
+                            }).join('')}
                         </div>
                     </div>
                     <div class="shop-char-img-space">
@@ -2904,9 +3111,9 @@
                     </div>
                     <div style="margin-left: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                         <div id="price-detail-${shopId}" style="font-size: 0.6rem; color: #888;">Day ${state.totalDays.toFixed(2)} (${Math.floor(state.currentPrice/state.basePrice*100)}%)</div>
-                        <div style="font-size: 0.7rem; color: #666; text-decoration: line-through;">${state.basePrice.toLocaleString()} G</div>
-                        <div id="price-${shopId}" style="font-size: 1.1rem; color: var(--gold-color); font-weight: bold;">${state.currentPrice.toLocaleString()} G</div>
-                        <button class="nav-button" style="padding: 8px 15px; font-size: 0.9rem;" onclick="acquireShopCharacter('${shopId}')">購入</button>
+                        <div style="font-size: 0.7rem; color: #666; text-decoration: line-through;">${formatGold(state.basePrice)}</div>
+                        <div id="price-${shopId}" style="font-size: 1.1rem; color: var(--gold-color); font-weight: bold;">${formatGold(state.currentPrice)}</div>
+                        <button id="buy-btn-${shopId}" class="nav-button" style="padding: 8px 15px; font-size: 0.9rem;" onclick="acquireShopCharacter('${shopId}')">購入</button>
                     </div>
                 `;
                 shopList.appendChild(div);
@@ -2916,7 +3123,13 @@
         async function acquireShopCharacter(shopCharId) {
             if (!currentUserData) return alert("ログインが必要です。");
             
+            const btn = document.getElementById(`buy-btn-${shopCharId}`);
+            const originalText = btn.innerText;
+
             try {
+                btn.disabled = true;
+                btn.innerText = "通信中...";
+
                 // 購入直前に最新のショップ価格情報を再取得
                 const refreshResponse = await fetch(GAS_URL + "?action=getShopCharacters");
                 const refreshData = await refreshResponse.json();
@@ -2931,10 +3144,10 @@
                 const currentPrice = state.currentPrice;
 
                 if (currentUserData.gold < currentPrice) {
-                    return alert(`ゴールドが足りません (${currentPrice.toLocaleString()}G必要です)。`);
+                    return alert(`ゴールドが足りません (${formatGold(currentPrice)}必要です)。`);
                 }
 
-                if (!confirm(`${currentPrice.toLocaleString()}Gを消費して【${char.name}】を購入しますか？`)) return;
+                if (!confirm(`${formatGold(currentPrice)}を消費して【${char.name}】を購入しますか？`)) return;
 
                 const params = new URLSearchParams();
                 params.append('action', 'acquireShopCharacter');
@@ -2946,18 +3159,202 @@
                 const res = await response.json();
                 if (res.success) {
                     alert(res.message);
+                    // 購入したキャラを即座にリストから除外してUI更新
+                    lastFetchedShopCharacters = lastFetchedShopCharacters.filter(c => c.shopCharId !== shopCharId);
+                    renderShop(lastFetchedShopCharacters);
+
                     currentUserData.gold = res.newGold;
-                    currentUserData.characterData = JSON.stringify(JSON.parse(currentUserData.characterData).concat(res.acquiredCharacter));
-                    localStorage.setItem('gs2_session', JSON.stringify(currentUserData));
+                    sampleCharacters.push(res.acquiredCharacter);
+                    currentUserData.characterData = JSON.stringify(sampleCharacters);
                     applyUserData(currentUserData); // UI更新
                     fetchShopCharacters(); // ショップを再読み込み
+                    saveGameData(true);
                 } else {
                     alert("購入失敗: " + res.message);
                 }
             } catch (e) {
                 console.error("Acquire shop character error", e);
                 alert("購入処理中にエラーが発生しました。");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
+        }
+
+        // 世界（ストーリー）メニュー関連
+        function openWorldMenu() {
+            document.getElementById('world-screen').style.display = 'flex';
+            toggleChatVisibility(false);
+            renderStoryStages();
+            fetchStoryRanking();
+        }
+
+        function closeWorldMenu() {
+            document.getElementById('world-screen').style.display = 'none';
+            toggleChatVisibility(true);
+        }
+
+        async function fetchStoryRanking() {
+            const list = document.getElementById('story-ranking-list');
+            list.innerHTML = '<div style="text-align:center; padding:10px;">読み込み中...</div>';
+            try {
+                const response = await fetch(GAS_URL + "?action=getStoryRanking");
+                const res = await response.json();
+                if (res.success) {
+                    list.innerHTML = res.ranking.map((r, i) => 
+                        `<div style="margin-bottom:8px; font-size:0.8rem; border-bottom:1px solid #222; padding-bottom:4px;">
+                            <span style="color:var(--accent-color); font-weight:bold;">#${i+1}</span> ${r.username} 
+                            <span style="float:right; color:#888;">STAGE ${r.progress}</span>
+                        </div>`
+                    ).join('');
+                }
+            } catch (e) {
+                list.innerHTML = '<div style="color:red;">ランキングの取得に失敗しました</div>';
+            }
+        }
+
+        function renderStoryStages() {
+            const container = document.getElementById('story-stage-list');
+            const progress = currentUserData.storyProgress || 0;
+            container.innerHTML = '';
+
+            // クリア済みのステージ + 次のステージを表示
+            for (let i = 0; i <= progress; i++) {
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'nav-button';
+                stageDiv.style.width = '100%';
+                stageDiv.style.marginBottom = '10px';
+                stageDiv.style.textAlign = 'left';
+                stageDiv.style.padding = '15px 30px';
+                
+                stageDiv.innerHTML = `STAGE ${i + 1} <span style="font-size:0.7rem; color:var(--gold-color); float:right;">${i < progress ? 'CLEAR' : 'CHALLENGE'}</span>`;
+                stageDiv.onclick = () => startStoryStage(i);
+                container.appendChild(stageDiv);
+            }
+        }
+
+        async function startStoryStage(stageIdx) {
+            if (!confirm(`STAGE ${stageIdx + 1} を開始しますか？`)) return;
+            closeWorldMenu();
+            
+            // ステージに応じた敵を生成
+            const stageLevel = stageIdx + 1;
+            const enemyCount = Math.min(3, Math.floor(stageIdx / 2) + 1); // 1, 1, 2, 2, 3, 3...
+            const attrs = ["炎", "水", "地"];
+            const enemies = [];
+
+            for (let i = 0; i < enemyCount; i++) {
+                const attr = attrs[Math.floor(Math.random() * attrs.length)];
+                enemies.push({
+                    name: `魔導兵器${String.fromCharCode(945 + i)}-${stageLevel}`,
+                    attribute: attr,
+                    baseStats: { hp: 100 + stageIdx * 20, str: 10 + stageIdx * 2, vit: 10 + stageIdx, agi: 10 + stageIdx },
+                    skills: [0, 5, 10, 15].slice(0, 2)
+                });
+            }
+            startBattle(enemies, true);
+        }
+
+        // フレンド機能のJS
+        function openFriendMenu() {
+            document.getElementById('friend-screen').style.display = 'flex';
+            toggleChatVisibility(false);
+            updateFriendsData();
+        }
+        function closeFriendMenu() {
+            document.getElementById('friend-screen').style.display = 'none';
+            toggleChatVisibility(true);
+        }
+
+        async function updateFriendsData() {
+            if (!currentUserData) return;
+            try {
+                const res = await fetch(`${GAS_URL}?action=getFriendsData&userId=${currentUserData.id}`).then(r => r.json());
+                if (res.success) {
+                    const notif = document.getElementById('friend-notif');
+                    if (res.receivedRequests.length > 0) {
+                        notif.innerText = res.receivedRequests.length;
+                        notif.style.display = 'block';
+                    } else { notif.style.display = 'none'; }
+
+                    renderFriendLists(res);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderFriendLists(data) {
+            const reqList = document.getElementById('friend-request-list');
+            reqList.innerHTML = data.receivedRequests.map(r => `
+                <div style="background:rgba(80,150,255,0.1); padding:10px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.8rem;">${r.username}</span>
+                    <div style="display:flex; gap:5px;">
+                        <button class="nav-button" style="padding:2px 8px; font-size:0.6rem; border-color:#2ecc71; color:#2ecc71;" onclick="handleFriendRequest('${r.id}', 'accept')">承認</button>
+                        <button class="nav-button" style="padding:2px 8px; font-size:0.6rem; border-color:#e74c3c; color:#e74c3c;" onclick="handleFriendRequest('${r.id}', 'reject')">拒絶</button>
+                    </div>
+                </div>
+            `).join('') || '<div style="color:#666; font-size:0.8rem;">なし</div>';
+
+            const mainList = document.getElementById('friend-main-list');
+            mainList.innerHTML = data.friends.map(f => `
+                <div style="background:rgba(255,255,255,0.05); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #333;">
+                    <div>
+                        <span class="online-dot ${f.isOnline ? 'status-on' : 'status-off'}"></span>
+                        <span style="font-weight:bold;">${f.username}</span>
+                        <span style="font-size:0.6rem; color:#666; margin-left:10px;">${f.isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
+                    <button class="nav-button" style="padding:5px 15px; font-size:0.7rem;" onclick="viewOtherUserProfile('${f.username}')">編成を見る</button>
+                </div>
+            `).join('') || '<div style="color:#666; text-align:center; margin-top:50px;">フレンドがいません</div>';
+        }
+
+        async function searchFriend() {
+            const query = document.getElementById('friend-search-input').value;
+            if (!query) return;
+            const resultsDiv = document.getElementById('friend-search-results');
+            resultsDiv.innerHTML = '<div style="font-size:0.8rem; color:#888;">検索中...</div>';
+            
+            try {
+                const res = await fetch(`${GAS_URL}?action=searchUser&query=${encodeURIComponent(query)}&myUserId=${currentUserData.id}`).then(r => r.json());
+                if (res.success) {
+                    resultsDiv.innerHTML = res.results.map(u => `
+                        <div style="background:#1a1a1a; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center; border:1px solid #444;">
+                            <span style="font-size:0.8rem;">${u.username}</span>
+                            <button class="nav-button" style="padding:2px 10px; font-size:0.6rem;" onclick="sendFriendRequest('${u.id}')">リクエスト</button>
+                        </div>
+                    `).join('') || '<div style="color:#888; font-size:0.8rem;">見つかりませんでした</div>';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function sendFriendRequest(toId) {
+            const params = new URLSearchParams();
+            params.append('action', 'sendFriendRequest');
+            params.append('fromId', currentUserData.id);
+            params.append('toId', toId);
+            
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: params }).then(r => r.json());
+                alert(res.message);
+                if (res.success) {
+                    document.getElementById('friend-search-input').value = '';
+                    document.getElementById('friend-search-results').innerHTML = '';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function handleFriendRequest(targetId, type) {
+            const params = new URLSearchParams();
+            params.append('action', 'handleFriendRequest');
+            params.append('myId', currentUserData.id);
+            params.append('targetId', targetId);
+            params.append('type', type);
+            
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: params }).then(r => r.json());
+                if (res.success) {
+                    updateFriendsData();
+                } else { alert(res.message); }
+            } catch (e) { console.error(e); }
         }
     </script>
 </body>
