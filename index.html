@@ -876,7 +876,7 @@
         #chat-header {
             background: linear-gradient(90deg, rgba(80, 150, 255, 0.15), transparent);
             color: var(--accent-color);
-            padding: 10px 15px;
+            padding: 8px 15px;
             font-size: 0.75rem;
             font-weight: bold;
             cursor: pointer;
@@ -1110,6 +1110,30 @@
         .online-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
         .status-on { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .status-off { background: #888; }
+
+        /* 通知アイテムのスタイル */
+        .noti-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #444;
+            padding: 1.5vh 2vh;
+            margin-bottom: 1vh;
+            position: relative;
+            transition: 0.3s;
+        }
+        .noti-item.unread {
+            background: rgba(80, 150, 255, 0.1);
+            border-left-color: var(--accent-color);
+        }
+        .noti-dot {
+            position: absolute;
+            top: 1.5vh;
+            right: 2vh;
+            width: 8px;
+            height: 8px;
+            background: #ff4d4d;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #ff4d4d;
+        }
     </style>
 </head>
 <body>
@@ -1175,7 +1199,12 @@
         <div class="user-info">
             <div class="username" id="display-username">---</div>
             <div class="userid" id="display-userid">ID: ---</div>
-            <button id="save-btn" onclick="saveGameData()">セーブ</button>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                <button id="save-btn" onclick="saveGameData()">セーブ</button>
+                <button id="noti-btn-header" onclick="openNotificationMenu()" style="background: rgba(255,255,255,0.1); border: 1px solid #444; color: #fff; cursor: pointer; padding: 4px 10px; border-radius: 4px; position: relative; font-size: 0.9rem;">
+                    🔔 <span id="noti-badge" class="notif-badge" style="display: none; top: -8px; right: -8px;">0</span>
+                </button>
+            </div>
         </div>
         <div class="currency">
             <span>ゴールド:</span>
@@ -1217,7 +1246,8 @@
     <div id="chat-container">
         <div id="chat-header">
             <div style="flex: 1; cursor: pointer;" onclick="toggleChat()">
-                <span>GLOBAL CHAT</span>
+                <span id="chat-back-btn" style="display:none; margin-right:10px;" onclick="event.stopPropagation(); switchChatTarget('GLOBAL')">⬅️</span>
+                <span id="chat-title">GLOBAL CHAT</span>
             </div>
             <span id="chat-reload-btn" style="margin-right: 15px; cursor: pointer; display: none; font-size: 0.8rem;" onclick="fetchChatMessages(true)">🔄</span>
             <span id="chat-toggle-icon" onclick="toggleChat()" style="cursor: pointer;">▲</span>
@@ -1228,6 +1258,8 @@
         <div id="chat-full-view">
             <div id="chat-messages"></div>
             <div id="chat-input-area">
+                <button onclick="triggerImageUpload()" style="background:none; border:none; cursor:pointer; font-size:1rem; opacity:0.7;">📷</button>
+                <input type="file" id="chat-image-input" style="display:none" accept="image/*" onchange="handleImageUpload(this)">
                 <input type="text" id="chat-input" placeholder="メッセージを入力..." onkeydown="if(event.key==='Enter') sendChatMessage()">
                 <button id="chat-send-btn" onclick="sendChatMessage()">送信</button>
             </div>
@@ -1264,6 +1296,29 @@
                     <p>キャラクターは時間が経つにつれて割引されます。</p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 通知画面 -->
+    <div id="notification-screen" class="screen-overlay">
+        <div class="screen-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-color); margin: 0; letter-spacing: 0.2em;">通知一覧</h2>
+                <button class="nav-button" style="padding: 5px 20px;" onclick="closeNotificationMenu()">閉じる</button>
+            </div>
+            <div id="notification-list" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+            </div>
+        </div>
+    </div>
+
+    <!-- トレード画面 -->
+    <div id="trade-screen" class="screen-overlay">
+        <div class="screen-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 id="trade-title" style="color: var(--gold-color); margin: 0; letter-spacing: 0.2em;">トレード交渉</h2>
+                <button class="nav-button" style="padding: 5px 20px;" onclick="closeTrade()">閉じる</button>
+            </div>
+            <div id="trade-ui-container" style="display: flex; gap: 20px; height: 70vh;"></div>
         </div>
     </div>
 
@@ -1333,7 +1388,7 @@
     </div>
     <script>
         // ここにデプロイしたGASのURLを貼り付けてください
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxOVWN-estf2_4YslFSNNur4uMrvNV7KUq5d6ZoMfVFPFINssKFq43jV0B_bOesoU0/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbx9PU4GJtNaQNnfvfLE8ntXIeY22cE0Z-xslufQ7Z00w-gSuuwIHRXYqsTYcQaUDO73/exec";
 
         // スキル詳細ポップアップの初期化
         const infoPopup = document.createElement('div');
@@ -1346,6 +1401,10 @@
         let friendUpdateInterval = null;
         let isLoginMode = true;
         let currentUserData = null;
+        let currentChatTarget = "GLOBAL";
+        let notificationHistory = JSON.parse(localStorage.getItem('mages_notif_history') || '[]');
+        let activeTrade = null;
+        let userInventory = [];
 
         // ページ読み込み時にセッション確認
         window.onload = () => {
@@ -1572,7 +1631,9 @@
                 baseStats: { hp: 250, str: 10, vit: 10, agi: 10 }, // 地属性, HP250, 他10
                 skills: [0, 15], // 通常攻撃とロック
                 imageParts: { back: "Back3.svg", face: "Face1.svg", eyes: "Eyes2.svg", front: "Front4.svg" },
-                colors: { hair: "#8B4513", eyes: "#228B22", skin: "#E0AC69" }
+                colors: { hair: "#8B4513", eyes: "#228B22", skin: "#E0AC69" },
+                level: 1,
+                exp: 0
             };
         }
 
@@ -1613,7 +1674,9 @@
                 baseStats: { hp: Math.floor(Math.random() * (hpRange.max - hpRange.min + 1)) + hpRange.min, str: Math.floor(Math.random() * (strRange.max - strRange.min + 1)) + strRange.min, vit: Math.floor(Math.random() * (vitRange.max - vitRange.min + 1)) + vitRange.min, agi: Math.floor(Math.random() * (agiRange.max - agiRange.min + 1)) + agiRange.min },
                 skills: selectedSkills,
                 imageParts: imageParts,
-                colors: colors
+                colors: colors,
+                level: 1,
+                exp: 0
             };
         }
 
@@ -1720,6 +1783,7 @@
                 params.append('characterData', JSON.stringify(sampleCharacters));
                 params.append('formationData', JSON.stringify(currentFormation));
                 params.append('storyProgress', currentUserData.storyProgress || 0);
+                params.append('items', JSON.stringify(userInventory));
 
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
@@ -1774,7 +1838,7 @@
             { name: "スモーク", attr: "地", power: 35, scale: "str", desc: "目くらまし。攻撃力を10%上げる。", buff: { type: "str", value: 10, icon: "⚔️↑" } },
         ];
 
-        async function startBattle(fixedEnemy = null, isStory = false) {
+        async function startBattle(fixedEnemy = null, isStory = false, stageIdx = -1) {
             if (!currentUserData) return alert("ログインが必要です");
             
             // プレイヤーパーティ構築
@@ -1783,12 +1847,12 @@
                 if (!char) return null;
                 return {
                     data: char,
-                    hp: calculateStat(char.baseStats.hp),
-                    maxHp: calculateStat(char.baseStats.hp),
+                    hp: calculateStat(char.baseStats.hp, char.level || 1),
+                    maxHp: calculateStat(char.baseStats.hp, char.level || 1),
                     stats: {
-                        str: calculateStat(char.baseStats.str),
-                        vit: calculateStat(char.baseStats.vit),
-                        agi: calculateStat(char.baseStats.agi)
+                        str: calculateStat(char.baseStats.str, char.level || 1),
+                        vit: calculateStat(char.baseStats.vit, char.level || 1),
+                        agi: calculateStat(char.baseStats.agi, char.level || 1)
                     },
                     effects: [], // バフ/デバフ用
                     skills: (char.skills || [0]).map(idx => SKILL_LIST[idx])
@@ -1839,11 +1903,14 @@
                 enemy: { units: enemyParty, activeIdx: 0, field: [] },
                 turn: 1,
                 isStory: isStory,
+                stageIdx: stageIdx,
                 isPlayerTurn: false,
                 isSwitching: false,
                 waitingForSwitch: false,
+                isProcessingAction: false,
                 globalField: [],
-                log: []
+                log: [],
+                drops: []
             };
 
             document.getElementById('battle-screen').style.display = 'flex';
@@ -1930,14 +1997,24 @@
             const clickAttr = canClick ? `onclick="handleUnitClick(${originalIdx})"` : '';
             const hasBuff = unit.effects.length > 0;
             
+            // 属性アイコンの定義
+            const attrIcon = unit.data.attribute === "炎" ? "🔥" : unit.data.attribute === "水" ? "💧" : "🌿";
+
             return `
                 <div class="battle-unit ${status} ${attrClass}" ${clickAttr} id="${isEnemy ? 'enemy' : 'player'}-unit-${originalIdx}">
+                    <!-- 属性バッジの追加 -->
+                    <div style="position: absolute; top: 5px; left: 5px; z-index: 10; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.3); color: #fff;">
+                        ${attrIcon} ${unit.data.attribute}
+                    </div>
                     ${hasBuff ? '<div class="buff-aura"></div>' : ''}
                     <div class="char-img-container unit-card-img">
                         ${createCharacterSvg(unit.data.imageParts, unit.data.colors)}
                     </div>
                     <div class="unit-card-info">
-                        <div style="font-weight:bold; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${unit.data.name}</div>
+                        <div style="font-weight:bold; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            <span style="color:var(--accent-color); font-size:0.7rem;">Lv.${unit.data.level || 1}</span>
+                            ${unit.data.name}
+                        </div>
                         <div class="hp-bar-container">
                             <div class="hp-bar-fill" style="width:${hpPer}%; background: ${isEnemy ? '#ff4d4d' : '#2ecc71'};"></div>
                         </div>
@@ -2116,6 +2193,7 @@
             const pUnit = battleData.player.units[battleData.player.activeIdx];
             const eUnit = battleData.enemy.units[battleData.enemy.activeIdx];
             battleData.isPlayerTurn = true;
+            battleData.isProcessingAction = false; // アクション入力を解禁
             
             const tooltip = document.getElementById('skill-tooltip');
             const eVit = getEffectiveStat(eUnit, 'vit');
@@ -2248,6 +2326,12 @@
         }
 
         async function executeTurn(skill, isPlayer) {
+            // プレイヤーのターンの場合、連打防止用のガード
+            if (isPlayer) {
+                if (battleData.isProcessingAction) return;
+                battleData.isProcessingAction = true;
+            }
+
             const aIdx = isPlayer ? battleData.player.activeIdx : battleData.enemy.activeIdx;
             const dIdx = isPlayer ? battleData.enemy.activeIdx : battleData.player.activeIdx;
             const attacker = isPlayer ? battleData.player.units[aIdx] : battleData.enemy.units[aIdx];
@@ -2404,8 +2488,43 @@
             
             if (win) {
                 await playBattleWin();
+
+                // 経験値獲得 (敵1体につき10Exp)
+                const expGain = (battleData.enemy.units.length || 0) * 10;
+                battleData.player.units.forEach(unit => {
+                    const char = unit.data;
+                    if (!char.level) char.level = 1;
+                    if (!char.exp) char.exp = 0;
+                    
+                    if (char.level < 20) {
+                        char.exp += expGain;
+                        // レベルアップ判定: 必要Exp = 現在のLv * 100
+                        while (char.level < 20 && char.exp >= char.level * 100) {
+                            char.exp -= char.level * 100;
+                            char.level++;
+                            addBattleLog(`${char.name}がレベル${char.level}に上がった！`);
+                        }
+                    }
+                });
+
+                // アイテムドロップ判定
+                const dropResults = [];
+                // STAGE 3 (idx 2): 技変更カード 30%
+                if (battleData.stageIdx === 2 && Math.random() < 0.3) {
+                    dropResults.push({ id: 'skill_change', name: '技変更カード' });
+                }
+                // STAGE 5 (idx 4): 高級技生成カード 10%
+                if (battleData.stageIdx === 4 && Math.random() < 0.1) {
+                    dropResults.push({ id: 'adv_skill_change', name: '高級技生成カード' });
+                }
+
+                dropResults.forEach(item => {
+                    addItemToInventory(item.id);
+                    addBattleLog(`アイテムドロップ: ${item.name}を獲得！`);
+                });
                 
-                if (battleData.isStory) {
+                // 最新の未クリアステージをクリアした時のみ進行させる
+                if (battleData.isStory && battleData.stageIdx === (currentUserData.storyProgress || 0)) {
                     currentUserData.storyProgress = (currentUserData.storyProgress || 0) + 1;
                     currentUserData.gold += 100; // ステージクリア報酬: 100万G
                     addBattleLog("ストーリーが進行しました！報酬: 100万G獲得");
@@ -2423,6 +2542,16 @@
             document.getElementById('battle-actions').innerHTML = ''; 
             const closeBtn = document.getElementById('battle-close-btn');
             closeBtn.style.display = 'block';
+        }
+
+        function addItemToInventory(itemId) {
+            const existing = userInventory.find(i => i.id === itemId);
+            if (existing) {
+                existing.count++;
+            } else {
+                const names = { 'skill_change': '技変更カード', 'adv_skill_change': '高級技生成カード' };
+                userInventory.push({ id: itemId, name: names[itemId], count: 1 });
+            }
         }
 
         function closeBattle() {
@@ -2552,6 +2681,11 @@
             const chars = isViewOnly ? currentViewContext.characters : sampleCharacters;
             const formation = isViewOnly ? currentViewContext.formation : currentFormation;
             const char = chars[index];
+            
+            if (!char.level) char.level = 1;
+            if (!char.exp) char.exp = 0;
+            const nextExp = char.level < 20 ? char.level * 100 : 0;
+            const expRate = nextExp > 0 ? (char.exp / nextExp) * 100 : 100;
 
             const list = document.getElementById('character-list');
             const detail = document.getElementById('character-detail');
@@ -2566,13 +2700,17 @@
             title.innerText = "キャラクター詳細";
 
             const currentStats = {
-                hp: calculateStat(char.baseStats.hp),
-                str: calculateStat(char.baseStats.str),
-                vit: calculateStat(char.baseStats.vit),
-                agi: calculateStat(char.baseStats.agi)
+                hp: calculateStat(char.baseStats.hp, char.level),
+                str: calculateStat(char.baseStats.str, char.level),
+                vit: calculateStat(char.baseStats.vit, char.level),
+                agi: calculateStat(char.baseStats.agi, char.level)
             };
             const ovr = calculateOvr(currentStats);
             const attrClass = char.attribute === "炎" ? "attr-fire" : char.attribute === "水" ? "attr-water" : "attr-earth";
+
+            // アイテム所持数の取得
+            const cardCount = userInventory.find(i => i.id === 'skill_change')?.count || 0;
+            const advCardCount = userInventory.find(i => i.id === 'adv_skill_change')?.count || 0;
 
             // 編成ボタンの状態
             const btnS = formation[0] === index ? 'active' : '';
@@ -2601,6 +2739,7 @@
                     <div class="char-header">
                         <div style="font-weight: bold;">
                             <span class="attr-badge ${attrClass}">${char.attribute}</span>
+                            <span style="color:var(--accent-color);">Lv.${char.level}</span>
                             ${char.name} 
                             <span style="font-size: 0.8rem; color: var(--gold-color); margin-left: 8px;">OVR ${ovr}</span>
                         </div>
@@ -2609,6 +2748,14 @@
                         <div style="width: 35%;">
                              <div class="char-img-container" style="border: 1px solid #444; width: 100%;">
                                 ${createCharacterSvg(char.imageParts, char.colors)}
+                             </div>
+                             <div style="margin-top:10px;">
+                                <div style="font-size:0.7rem; color:#888; margin-bottom:2px; display:flex; justify-content:space-between;">
+                                    <span>Exp</span><span>${char.level < 20 ? char.exp + ' / ' + nextExp : 'MAX'}</span>
+                                </div>
+                                <div style="width:100%; height:4px; background:#222; border-radius:2px; overflow:hidden;">
+                                    <div style="width:${expRate}%; height:100%; background:var(--accent-color); transition:0.3s;"></div>
+                                </div>
                              </div>
                         </div>
                         <div style="flex: 1.5;">
@@ -2631,6 +2778,21 @@
                                     <button class="nav-button ${btn3}" style="padding: 1vh; font-size: 1.8vh; line-height: 1.2;" onclick="setFormation(${index}, 2)">${label3}</button>
                                 </div>
                             </div>
+                            <div style="margin-top: 2vh; background: rgba(80,150,255,0.05); padding: 1.5vh; border: 1px solid rgba(80,150,255,0.2);">
+                                <div style="font-size: 1.6vh; color: var(--accent-color); margin-bottom: 1vh; font-weight: bold;">アイテム使用</div>
+                                <div style="display: flex; flex-direction: column; gap: 1vh;">
+                                    <button class="nav-button" style="padding: 1vh; font-size: 1.6vh; display: flex; justify-content: space-between;" 
+                                            ${cardCount === 0 ? 'disabled' : ''} onclick="useSkillChangeItem(${index}, 'normal')">
+                                        <span>技変更カード (全変更)</span>
+                                        <span style="color: var(--gold-color);">所持: ${cardCount}</span>
+                                    </button>
+                                    <button class="nav-button" style="padding: 1vh; font-size: 1.6vh; display: flex; justify-content: space-between;" 
+                                            ${advCardCount === 0 ? 'disabled' : ''} onclick="useSkillChangeItem(${index}, 'advanced')">
+                                        <span>高級技生成カード (1つ維持)</span>
+                                        <span style="color: var(--gold-color);">所持: ${advCardCount}</span>
+                                    </button>
+                                </div>
+                            </div>
                         <div style="margin-top: 3vh; border-top: 1px solid #333; padding-top: 2vh; display: ${char.name === '無名の騎士' ? 'none' : 'block'};">
                                 <button id="sell-action-btn" class="nav-button" style="width: 100%; border-color: #e74c3c; color: #e74c3c;" onclick="sellCharacter(${index})">ショップに売却</button>
                             </div>
@@ -2639,6 +2801,57 @@
                     </div>
                 </div>
             `;
+        }
+
+        function useSkillChangeItem(charIdx, type) {
+            const char = sampleCharacters[charIdx];
+            const itemId = type === 'normal' ? 'skill_change' : 'adv_skill_change';
+            const itemName = type === 'normal' ? '技変更カード' : '高級技生成カード';
+
+            if (type === 'advanced') {
+                const keepIdx = prompt("維持する技の番号を入力してください (1～3)", "1");
+                const kIdx = parseInt(keepIdx) - 1;
+                if (isNaN(kIdx) || kIdx < 0 || kIdx > 2) return alert("無効な入力です");
+                const keptSkill = char.skills[kIdx];
+                char.skills = rerollSkills(char.attribute, [keptSkill]);
+            } else {
+                if (!confirm(`${itemName}を使用して、${char.name}の技をすべて作り変えますか？`)) return;
+                char.skills = rerollSkills(char.attribute, []);
+            }
+
+            // インベントリ消費
+            const item = userInventory.find(i => i.id === itemId);
+            if (item) item.count--;
+            
+            alert("技を更新しました！");
+            showCharDetails(charIdx);
+            saveGameData(true);
+        }
+
+        function rerollSkills(attribute, initialSkills = []) {
+            const attrs = ["炎", "水", "地"];
+            const skillGroups = {
+                "無": [0, 1, 2, 3, 4],
+                "炎": [5, 6, 7, 8, 9],
+                "水": [10, 11, 12, 13, 14],
+                "地": [15, 16, 17, 18, 19]
+            };
+            const newSkills = [...initialSkills];
+            while(newSkills.length < 3) {
+                const r = Math.random() * 100;
+                let selectedAttr;
+                const otherAttrs = attrs.filter(a => a !== attribute);
+
+                if (r < 70) selectedAttr = attribute;
+                else if (r < 80) selectedAttr = otherAttrs[0];
+                else if (r < 90) selectedAttr = otherAttrs[1];
+                else selectedAttr = "無";
+
+                const pool = skillGroups[selectedAttr];
+                const skillIdx = pool[Math.floor(Math.random() * pool.length)];
+                if (!newSkills.includes(skillIdx)) newSkills.push(skillIdx);
+            }
+            return newSkills;
         }
 
         async function sellCharacter(index) {
@@ -2727,6 +2940,9 @@
                 if (userData.storyProgress !== undefined) {
                     currentUserData.storyProgress = parseInt(userData.storyProgress);
                 }
+                if (userData.items) {
+                    userInventory = typeof userData.items === 'string' ? JSON.parse(userData.items) : userData.items;
+                }
                 
                 // 「無名の騎士」を所持していない場合は付与
                 if (!sampleCharacters.some(c => c.name === "無名の騎士")) {
@@ -2774,33 +2990,8 @@
                     applyUserData(res.userData); // UIに反映 (新規登録時はcharacterDataが空になる)
 
                     if (!isLoginMode) { // 新規登録の場合のみ実行
-                        // 平均以下のキャラクターを3体生成
-                        const newChars = [
-                            generateBelowAverageCharacter("A"),
-                            generateBelowAverageCharacter("B"),
-                            generateBelowAverageCharacter("C")
-                        ];
-                        sampleCharacters.push(...newChars); // グローバルなキャラクターリストに追加
-                        currentFormation = [null, null, null]; // 新規ユーザーの編成をリセット
-
-                        // currentUserDataを更新し、サーバーに保存
-                        currentUserData.characterData = JSON.stringify(sampleCharacters);
-                        currentUserData.formationData = JSON.stringify(currentFormation);
-
-                        // サイレントセーブを実行して初期キャラクターデータを永続化
-                        const saveParams = new URLSearchParams();
-                        saveParams.append('action', 'saveData');
-                        saveParams.append('userId', currentUserData.id);
-                        saveParams.append('gold', currentUserData.gold);
-                        saveParams.append('characterData', currentUserData.characterData);
-                        saveParams.append('formationData', currentUserData.formationData);
-
-                        await fetch(GAS_URL, {
-                            method: 'POST',
-                            body: saveParams
-                        });
-                        // UIに新しいキャラクターを反映させるため、再度applyUserDataを呼び出す
-                        applyUserData(currentUserData);
+                        // 新規登録時の初期キャラクター設定とセーブはapplyUserData内で処理される
+                        // ここではcurrentUserDataの初期化のみ
                     }
                 } else {
                     alert(res.message);
@@ -2817,6 +3008,7 @@
         // チャット機能
         let isChatExpanded = false;
         async function fetchChatMessages(isManual = false) {
+            if (!currentUserData) return;
             const reloadBtn = document.getElementById('chat-reload-btn');
             try {
                 if (isManual) {
@@ -2824,9 +3016,10 @@
                     reloadBtn.style.pointerEvents = 'none';
                 }
 
-                const response = await fetch(GAS_URL + "?action=getChat");
+                const response = await fetch(`${GAS_URL}?action=getChat&username=${currentUserData.username}&target=${currentChatTarget}`);
                 const res = await response.json();
                 if (res.success) {
+                    checkNewDMs(res.messages);
                     renderChat(res.messages);
                 }
             } catch (e) { 
@@ -2839,14 +3032,53 @@
             }
         }
 
+        function checkNewDMs(messages) {
+            let changed = false;
+            messages.forEach(m => {
+                const from = m[1];
+                const to = m[2];
+                const msg = m[3];
+                const time = m[0];
+                const id = `dm_${from}_${time}`;
+
+                // 自分宛かつ現在のチャット相手以外からのメッセージを通知に追加
+                if (to === currentUserData.username && from !== currentChatTarget && !notificationHistory.find(n => n.id === id)) {
+                    notificationHistory.unshift({
+                        id: id,
+                        type: 'dm',
+                        title: `DM: ${from}`,
+                        body: msg.length > 20 ? msg.substring(0, 20) + '...' : msg,
+                        data: { from: from },
+                        time: new Date(time).toLocaleString(),
+                        read: false
+                    });
+                    changed = true;
+                }
+            });
+            if (changed) {
+                notificationHistory = notificationHistory.slice(0, 50);
+                localStorage.setItem('mages_notif_history', JSON.stringify(notificationHistory));
+                updateNotifications();
+            }
+        }
+
         function renderChat(messages) {
             const mini = document.getElementById('chat-mini-view');
             const full = document.getElementById('chat-messages');
             
             const html = messages.map(m => {
-                const user = m[1];
-                const msg = m[2];
-                return `<div class="chat-msg"><span class="chat-msg-user" onclick="viewOtherUserProfile('${user}')" title="編成を見る">${user}:</span><span class="chat-msg-text">${msg}</span></div>`;
+                const from = m[1];
+                const msg = m[3];
+                const isImg = m[4] === "true" || m[4] === true;
+                
+                const content = isImg ? `<img src="${msg}" style="max-width:100%; border-radius:4px; margin-top:5px; cursor:pointer;" onclick="window.open('${msg}')">` : `<span class="chat-msg-text">${msg}</span>`;
+                
+                return `
+                    <div class="chat-msg">
+                        <span class="chat-msg-user" onclick="viewOtherUserProfile('${from}')" title="編成を見る">${from}:</span>
+                        ${from !== currentUserData.username ? `<span style="cursor:pointer; font-size:0.8em; margin-left:5px; opacity:0.6;" onclick="switchChatTarget('${from}')" title="個人チャット">✉️</span>` : ''}
+                        ${content}
+                    </div>`;
             }).join('');
 
             full.innerHTML = html;
@@ -2878,17 +3110,51 @@
             }
         }
 
-        async function sendChatMessage() {
+        function switchChatTarget(target) {
+            currentChatTarget = target;
+            document.getElementById('chat-title').innerText = target === "GLOBAL" ? "GLOBAL CHAT" : `DM: ${target}`;
+            document.getElementById('chat-back-btn').style.display = target === "GLOBAL" ? "none" : "inline";
+            
+            // チャット相手を切り替えたらメニュー類を閉じる
+            closeFriendMenu();
+            closeFormation();
+            closeWorldMenu();
+            closeShop();
+
+            if (!isChatExpanded) toggleChat();
+            fetchChatMessages(true);
+        }
+
+        function triggerImageUpload() {
+            document.getElementById('chat-image-input').click();
+        }
+
+        async function handleImageUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 1024 * 1024) return alert("画像サイズは1MB以下にしてください");
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                await sendChatMessage(e.target.result, true);
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+
+        async function sendChatMessage(msgContent = null, isImage = false) {
             const input = document.getElementById('chat-input');
-            const msg = input.value.trim();
+            const msg = msgContent || input.value.trim();
             if (!msg || !currentUserData) return;
 
-            input.value = '';
+            if (!msgContent) input.value = '';
             try {
                 const params = new URLSearchParams();
                 params.append('action', 'sendChat');
                 params.append('username', currentUserData.username);
+                params.append('target', currentChatTarget);
                 params.append('message', msg);
+                params.append('isImage', isImage);
 
                 await fetch(GAS_URL, { method: 'POST', body: params });
                 fetchChatMessages();
@@ -3033,19 +3299,18 @@
             const totalPoints = getTierWeight(char.tiers.hp) + getTierWeight(char.tiers.str) + 
                                getTierWeight(char.tiers.vit) + getTierWeight(char.tiers.agi);
             
-            // 基本価格: 2000Gから始まり、能力に応じて指数的に増加 (1.28倍刻みで最大約3600万G)
-            const basePrice = Math.floor(2000 * Math.pow(1.28, totalPoints));
+            // 基本価格: 5000Gから始まり、能力に応じて増加 (1/100に調整)
+            const basePrice = Math.floor(5000 * Math.pow(1.08, totalPoints)); 
             
             // リアルタイム経過時間の計算
             const now = Date.now();
             const fetchTime = char.fetchedAt || now;
             const elapsedSinceFetch = (now - fetchTime) / (1000 * 60 * 60 * 24);
             const preciseTotalDays = (parseFloat(char.preciseDaysElapsed) || 0) + (isNaN(elapsedSinceFetch) ? 0 : elapsedSinceFetch);
-            const serverElapsed = parseFloat(char.preciseDaysElapsed);
             
             // ローカル表示ではリアルタイムに滑らかに価格が下がるようにする
             const validDays = isNaN(preciseTotalDays) ? 0 : preciseTotalDays;
-            const currentPrice = Math.max(Math.floor(basePrice * Math.pow(0.5, validDays)), 500);
+            const currentPrice = Math.max(Math.floor(basePrice * Math.pow(0.5, validDays)), Math.floor(basePrice / 4)); // 最低価格を基本価格の1/4に設定
             
             return { basePrice, currentPrice, totalDays: validDays };
         }
@@ -3076,6 +3341,7 @@
                 return;
             }
 
+            // 表示制限をなくし、全件を表示
             shopCharacters.forEach(char => {
                 // リアルタイム計算の起点として取得時刻を保持
                 if (!char.fetchedAt) char.fetchedAt = Date.now();
@@ -3122,6 +3388,11 @@
 
         async function acquireShopCharacter(shopCharId) {
             if (!currentUserData) return alert("ログインが必要です。");
+
+            // キャラクター所持上限チェック
+            if (sampleCharacters.length >= 8) {
+                return alert("所持できるキャラクターは最大8体です。これ以上購入できません。");
+            }
             
             const btn = document.getElementById(`buy-btn-${shopCharId}`);
             const originalText = btn.innerText;
@@ -3248,11 +3519,11 @@
                 enemies.push({
                     name: `魔導兵器${String.fromCharCode(945 + i)}-${stageLevel}`,
                     attribute: attr,
-                    baseStats: { hp: 100 + stageIdx * 20, str: 10 + stageIdx * 2, vit: 10 + stageIdx, agi: 10 + stageIdx },
+                    baseStats: { hp: 100 + stageIdx * 10, str: 10 + stageIdx * 1, vit: 10 + stageIdx * 0.5, agi: 10 + stageIdx * 0.5 },
                     skills: [0, 5, 10, 15].slice(0, 2)
                 });
             }
-            startBattle(enemies, true);
+            startBattle(enemies, true, stageIdx);
         }
 
         // フレンド機能のJS
@@ -3271,15 +3542,98 @@
             try {
                 const res = await fetch(`${GAS_URL}?action=getFriendsData&userId=${currentUserData.id}`).then(r => r.json());
                 if (res.success) {
-                    const notif = document.getElementById('friend-notif');
-                    if (res.receivedRequests.length > 0) {
-                        notif.innerText = res.receivedRequests.length;
-                        notif.style.display = 'block';
-                    } else { notif.style.display = 'none'; }
-
+                    updateNotifications(res);
                     renderFriendLists(res);
                 }
             } catch (e) { console.error(e); }
+        }
+
+        function updateNotifications(data) {
+            const requests = data ? (data.receivedRequests || []) : [];
+            let changed = false;
+
+            // リクエストを履歴に統合
+            requests.forEach(r => {
+                const id = `freq_${r.id}`;
+                if (!notificationHistory.find(n => n.id === id)) {
+                    notificationHistory.unshift({
+                        id: id,
+                        type: 'friend_request',
+                        title: 'フレンドリクエスト',
+                        body: `${r.username}さんからリクエストが届いています。`,
+                        data: r,
+                        time: new Date().toLocaleString(),
+                        read: false
+                    });
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                notificationHistory = notificationHistory.slice(0, 50); // 最大50件
+                localStorage.setItem('mages_notif_history', JSON.stringify(notificationHistory));
+            }
+
+            // バッジの更新
+            const unreadCount = notificationHistory.filter(n => !n.read).length;
+            const badge = document.getElementById('noti-badge');
+            const friendBadge = document.getElementById('friend-notif');
+
+            if (unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+            
+            if (friendBadge) {
+                friendBadge.innerText = requests.length;
+                friendBadge.style.display = requests.length > 0 ? 'block' : 'none';
+            }
+        }
+
+        function openNotificationMenu() {
+            document.getElementById('notification-screen').style.display = 'flex';
+            toggleChatVisibility(false);
+            
+            // 開いた瞬間にすべて既読にする
+            notificationHistory.forEach(n => n.read = true);
+            localStorage.setItem('mages_notif_history', JSON.stringify(notificationHistory));
+            
+            renderNotificationList();
+            updateNotifications(); // バッジ表示を更新
+        }
+
+        function closeNotificationMenu() {
+            document.getElementById('notification-screen').style.display = 'none';
+            toggleChatVisibility(true);
+        }
+
+        function renderNotificationList() {
+            const list = document.getElementById('notification-list');
+            if (notificationHistory.length === 0) {
+                list.innerHTML = '<div style="color:#666; text-align:center; padding:50px;">通知はありません</div>';
+                return;
+            }
+            list.innerHTML = notificationHistory.map(n => `
+                <div class="noti-item ${n.read ? '' : 'unread'}" 
+                     style="cursor:pointer;" 
+                     onclick="handleNotificationClick('${n.id}')">
+                    ${n.read ? '' : '<div class="noti-dot"></div>'}
+                    <div style="font-weight:bold; color:var(--accent-color); font-size:0.9rem;">${n.title}</div>
+                    <div style="font-size:0.8rem; color:#eee; margin: 5px 0;">${n.body}</div>
+                    <div style="font-size:0.6rem; color:#666;">${n.time}</div>
+                </div>
+            `).join('');
+        }
+
+        function handleNotificationClick(id) {
+            const noti = notificationHistory.find(n => n.id === id);
+            if (!noti) return;
+            if (noti.type === 'dm') {
+                closeNotificationMenu();
+                switchChatTarget(noti.data.from);
+            }
         }
 
         function renderFriendLists(data) {
@@ -3302,7 +3656,11 @@
                         <span style="font-weight:bold;">${f.username}</span>
                         <span style="font-size:0.6rem; color:#666; margin-left:10px;">${f.isOnline ? 'ONLINE' : 'OFFLINE'}</span>
                     </div>
-                    <button class="nav-button" style="padding:5px 15px; font-size:0.7rem;" onclick="viewOtherUserProfile('${f.username}')">編成を見る</button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="nav-button" style="padding:5px 15px; font-size:0.7rem; border-color:var(--accent-color);" onclick="switchChatTarget('${f.username}')">DM</button>
+                        <button class="nav-button" style="padding:5px 15px; font-size:0.7rem; border-color:var(--gold-color);" onclick="initiateTrade('${f.id}', '${f.username}')">トレード</button>
+                        <button class="nav-button" style="padding:5px 15px; font-size:0.7rem;" onclick="viewOtherUserProfile('${f.username}')">編成</button>
+                    </div>
                 </div>
             `).join('') || '<div style="color:#666; text-align:center; margin-top:50px;">フレンドがいません</div>';
         }
@@ -3356,6 +3714,121 @@
                 } else { alert(res.message); }
             } catch (e) { console.error(e); }
         }
+
+        // --- トレードUI制御 ---
+        async function initiateTrade(targetId, targetName) {
+            try {
+                const res = await fetch(`${GAS_URL}?action=getTrades&userId=${currentUserData.id}`).then(r=>r.json());
+                activeTrade = res.trades.find(t => t.u1 === targetId || t.u2 === targetId);
+                
+                if (!activeTrade) {
+                    if (!confirm(`${targetName}さんとトレードを開始しますか？`)) return;
+                    const createRes = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: new URLSearchParams({action:'manageTrade', subAction:'create', fromId:currentUserData.id, toId:targetId})
+                    }).then(r=>r.json());
+                    return await initiateTrade(targetId, targetName);
+                }
+                
+                document.getElementById('trade-screen').style.display = 'flex';
+                renderTradeUI();
+            } catch (e) { console.error(e); alert("トレード開始に失敗しました"); }
+        }
+
+        function renderTradeUI() {
+            if (!activeTrade) return;
+            const container = document.getElementById('trade-ui-container');
+            const isU1 = activeTrade.u1 === currentUserData.id;
+            const myOffer = isU1 ? {char: activeTrade.u1Char, gold: activeTrade.u1Gold, app: activeTrade.u1App} : {char: activeTrade.u2Char, gold: activeTrade.u2Gold, app: activeTrade.u2App};
+            const opOffer = isU1 ? {char: activeTrade.u2Char, gold: activeTrade.u2Gold, app: activeTrade.u2App} : {char: activeTrade.u1Char, gold: activeTrade.u1Gold, app: activeTrade.u1App};
+
+            container.innerHTML = `
+                <div style="flex:1; background:rgba(255,255,255,0.05); padding:20px; border:1px solid #444;">
+                    <h3 style="color:var(--accent-color);">あなたの提示</h3>
+                    <div style="height:200px; border:1px dashed #666; margin-bottom:10px; display:flex; align-items:center; justify-content:center; background:#000;">
+                        ${myOffer.char ? createCharacterSvg(myOffer.char.imageParts, myOffer.char.colors) : 'キャラ未選択'}
+                    </div>
+                    <select onchange="updateTradeOffer('char', this.value)" style="width:100%; padding:10px; background:#222; color:#fff; margin-bottom:10px;">
+                        <option value="">提示キャラを選択...</option>
+                        ${sampleCharacters.map((c, i) => `<option value='${JSON.stringify(c)}' ${myOffer.char?.name === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
+                    </select>
+                    <div style="margin-bottom:20px;">
+                        <label style="font-size:0.8rem; color:#888;">提示ゴールド (万G)</label>
+                        <input type="number" value="${myOffer.gold}" onchange="updateTradeOffer('gold', this.value)" style="width:100%; padding:10px; background:#222; color:#fff; border:1px solid #444;">
+                    </div>
+                    <button class="nav-button" style="width:100%; border-color:${myOffer.app ? '#2ecc71' : 'var(--accent-color)'};" 
+                            onclick="manageTradeAction('approve')">${myOffer.app ? '承認済み' : '承認する'}</button>
+                </div>
+
+                <div style="flex:0.1; display:flex; align-items:center; justify-content:center; font-size:2rem;">⇄</div>
+
+                <div style="flex:1; background:rgba(255,255,255,0.05); padding:20px; border:1px solid #444;">
+                    <h3 style="color:var(--gold-color);">相手の提示</h3>
+                    <div style="height:200px; border:1px dashed #666; margin-bottom:10px; display:flex; align-items:center; justify-content:center; background:#000;">
+                        ${opOffer.char ? createCharacterSvg(opOffer.char.imageParts, opOffer.char.colors) : '相手は未選択'}
+                    </div>
+                    <div style="padding:15px; background:rgba(0,0,0,0.3); border:1px solid #333; height:150px;">
+                        <p>相手のキャラ: ${opOffer.char?.name || 'なし'}</p>
+                        <p>相手のゴールド: ${opOffer.gold}万G</p>
+                        <div style="margin-top:20px; text-align:center; color:${opOffer.app ? '#2ecc71' : '#ff4d4d'}; font-weight:bold;">
+                            ${opOffer.app ? '● 相手は承認しました' : '○ 相手は検討中です'}
+                        </div>
+                    </div>
+                    <button class="nav-button" style="width:100%; margin-top:10px; border-color:#e74c3c; color:#e74c3c;" onclick="manageTradeAction('cancel')">トレード中止</button>
+                </div>
+            `;
+        }
+
+        async function updateTradeOffer(type, val) {
+            const isU1 = activeTrade.u1 === currentUserData.id;
+            let charJson = isU1 ? JSON.stringify(activeTrade.u1Char || "") : JSON.stringify(activeTrade.u2Char || "");
+            let gold = isU1 ? activeTrade.u1Gold : activeTrade.u2Gold;
+
+            if (type === 'char') charJson = val;
+            if (type === 'gold') gold = val;
+
+            await fetch(GAS_URL, {
+                method: 'POST',
+                body: new URLSearchParams({
+                    action: 'manageTrade', subAction: 'update',
+                    tradeId: activeTrade.id, userId: currentUserData.id,
+                    charJson: charJson, gold: gold
+                })
+            });
+            refreshTradeData();
+        }
+
+        async function manageTradeAction(subAction) {
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                body: new URLSearchParams({
+                    action: 'manageTrade', subAction: subAction,
+                    tradeId: activeTrade.id, userId: currentUserData.id
+                })
+            }).then(r=>r.json());
+            
+            if (res.message) alert(res.message);
+            if (subAction === 'cancel' || (subAction === 'approve' && res.message.includes('成立'))) {
+                closeTrade();
+                saveGameData(true);
+            } else {
+                refreshTradeData();
+            }
+        }
+
+        async function refreshTradeData() {
+            const res = await fetch(`${GAS_URL}?action=getTrades&userId=${currentUserData.id}`).then(r=>r.json());
+            activeTrade = res.trades.find(t => t.id === activeTrade.id);
+            if (activeTrade) renderTradeUI();
+            else closeTrade();
+        }
+
+        function closeTrade() {
+            document.getElementById('trade-screen').style.display = 'none';
+            activeTrade = null;
+            updateFriendsData();
+        }
+
     </script>
 </body>
 </html>
