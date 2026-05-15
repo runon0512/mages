@@ -857,9 +857,8 @@
         #chat-container {
             position: absolute;
             bottom: 18%; /* ナビゲーションバー(18%)のすぐ上に配置 */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 35%;
+            right: 1%;
+            width: 22%;
             min-width: 320px;
             max-width: 500px;
             background: rgba(10, 10, 10, 0.7);
@@ -896,7 +895,7 @@
         }
         #chat-full-view {
             display: none;
-            height: 30vh;
+            height: 65vh;
             flex-direction: column;
         }
         #chat-messages {
@@ -1716,9 +1715,10 @@
             }
         ];
 
-        // ステータス計算（現在はベース値をそのまま返す）
-        function calculateStat(base) {
-            return Math.floor(base);
+        // ステータス計算（レベル1アップごとに各ステータスが1上昇）
+        function calculateStat(base, level = 1) {
+            const lv = level || 1;
+            return Math.floor(base) + (lv - 1);
         }
 
         // OVR（総合値）の計算
@@ -2760,10 +2760,10 @@
                         </div>
                         <div style="flex: 1.5;">
                             <div class="stat-grid">
-                                <div class="char-stats"><span>最大体力</span><span class="stat-value">${currentStats.hp}</span></div>
-                                <div class="char-stats"><span>筋力</span><span class="stat-value">${currentStats.str}</span></div>
-                                <div class="char-stats"><span>屈強</span><span class="stat-value">${currentStats.vit}</span></div>
-                                <div class="char-stats"><span>俊敏</span><span class="stat-value">${currentStats.agi}</span></div>
+                                <div class="char-stats"><span>最大体力</span><span class="stat-value">${currentStats.hp} <span style="font-size:0.75rem; color:#666; font-weight:normal;">(${char.baseStats.hp})</span></span></div>
+                                <div class="char-stats"><span>筋力</span><span class="stat-value">${currentStats.str} <span style="font-size:0.75rem; color:#666; font-weight:normal;">(${char.baseStats.str})</span></span></div>
+                                <div class="char-stats"><span>屈強</span><span class="stat-value">${currentStats.vit} <span style="font-size:0.75rem; color:#666; font-weight:normal;">(${char.baseStats.vit})</span></span></div>
+                                <div class="char-stats"><span>俊敏</span><span class="stat-value">${currentStats.agi} <span style="font-size:0.75rem; color:#666; font-weight:normal;">(${char.baseStats.agi})</span></span></div>
                             </div>
                             <div style="margin-top: 1vh;">
                                 <div style="font-size: 1.8vh; color: var(--accent-color); margin-bottom: 1vh;">習得スキル</div>
@@ -3731,6 +3731,8 @@
                 }
                 
                 document.getElementById('trade-screen').style.display = 'flex';
+                document.getElementById('friend-screen').style.display = 'none'; // 親メニューを閉じる
+                toggleChatVisibility(false); // ホーム画面以外なのでチャットを隠す
                 renderTradeUI();
             } catch (e) { console.error(e); alert("トレード開始に失敗しました"); }
         }
